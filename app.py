@@ -11,27 +11,26 @@ st.set_page_config(layout="wide")
 def load_data():
     return pd.read_csv('paskolos.csv', delimiter=";")
 
-# Load the data (cached)
-adresai_apj2 = load_data()
 
-# Convert 'ja_reg_data' to datetime if it's not already and extract the year
+paskolos = load_data()
+
 @st.cache_data
 def preprocess_data(data):
-    data['ja_reg_data'] = pd.to_datetime(data['date'])
-    data['year'] = data['ja_reg_data'].dt.year
+    data['paskolu_data'] = pd.to_datetime(data['date'])
+    data['year'] = data['paskolu_data'].dt.year
     return data
 
-adresai_apj2 = preprocess_data(adresai_apj2)
+paskolos = preprocess_data(paskolos)
 
 
 pattern = r'(?:[^;]*;){5}([^;]*);'
-adresai_apj2['regex_lt_long_title'] = adresai_apj2['lt_long_title'].str.extract(pattern)
+paskolos['regex_lt_long_title'] = paskolos['lt_long_title'].str.extract(pattern)
 
 # Streamlit App
 st.markdown("<h1 style='text-align: center; font-weight: bold;'>Paskolos pagal rezidentiškumą</h1>", unsafe_allow_html=True)
 
 
-# Add slicers (filters) in the sidebar
+
 st.sidebar.header("Filtrai")
 
 @st.cache_data
@@ -40,7 +39,7 @@ def get_unique_values(data):
     form_list = data['regex_lt_long_title'].unique()
     return years, form_list
 
-years, form_list = get_unique_values(adresai_apj2)
+years, form_list = get_unique_values(paskolos)
 
 def multiselect_with_all(label, options, default):
     options_with_all = ["All"] + list(options)
@@ -50,11 +49,11 @@ def multiselect_with_all(label, options, default):
     else:
         return selected
 
-# Date Range Filter for 'ja_reg_data' (Year-based)
+
 with st.sidebar.expander("Pasirinkite metus", expanded=False):  # Collapsible expander
     selected_years = multiselect_with_all("Choose Year(s)", options=sorted(years), default=sorted(years))
 
-# Multi-select for 'form_pavadinimas' (Form Type)
+
 with st.sidebar.expander("Pasirinkite rezidentiškumą", expanded=False):
     selected_forms = multiselect_with_all("Choose Form Type(s)", options=form_list, default=form_list)
 
@@ -68,12 +67,12 @@ def filter_data(data, selected_years, selected_forms):
     return data
 
 # Apply filters
-filtered_data = filter_data(adresai_apj2, selected_years, selected_forms)
+filtered_data = filter_data(paskolos, selected_years, selected_forms)
 
 rez_sum = filtered_data.groupby(["regex_lt_long_title"])["value"].sum().sort_values(ascending=True)
 year_counts = filtered_data.groupby(["year"])["value"].sum()
 
-# Display the table and the graphs side by side
+
 col1, col2 = st.columns([1.5, 3])
 
 with col1:
